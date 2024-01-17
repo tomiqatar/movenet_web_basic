@@ -7,11 +7,16 @@ import { drawKeypoints, drawSkeletonLines } from './utilities';
 
 function App() {
   const webcamRef = useRef(null);
+  const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [model, setModel] = useState(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [drawSkeleton, setDrawSkeleton] = useState(false);
   const [isLoadingModel, setIsLoadingModel] = useState(true);
+  const [videoFile, setVideoFile] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processedVideo, setProcessedVideo] = useState(null);
+  const [processingProgress, setProcessingProgress] = useState(0);
 
   // Load MoveNet model
   useEffect(() => {
@@ -89,6 +94,57 @@ function App() {
     }
   }, [isCameraActive, detectPose]);
 
+  // Handle video upload and play it on the canvas
+  const handleVideoUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      videoRef.current.src = url;
+      videoRef.current.play();
+    }
+  };
+
+  // Draw video on canvas
+  const drawVideoOnCanvas = () => {
+    const ctx = canvasRef.current.getContext('2d');
+    const video = videoRef.current;
+
+    const renderFrame = async () => {
+      if (!video.paused && !video.ended) {
+        ctx.drawImage(video, 0, 0, canvasRef.current.width, canvasRef.current.height);
+
+        // Calculate sizeScale based on canvas and video dimensions
+        const scaleWidth = canvasRef.current.width / video.videoWidth;
+        const scaleHeight = canvasRef.current.height / video.videoHeight;
+        const sizeScale = Math.min(scaleWidth, scaleHeight) * 5;
+
+        if (model) {
+          // Perform pose detection
+          const poses = await model.estimatePoses(canvasRef.current);
+          poses.forEach((pose) => {
+            // Pass sizeScale to the drawing functions
+            drawKeypoints(pose.keypoints, 0.5, ctx, 1, sizeScale);
+            drawSkeletonLines(pose.keypoints, 0.5, ctx, 1, sizeScale);
+          });
+        }
+
+        requestAnimationFrame(renderFrame);
+      }
+    };
+
+    video.addEventListener('play', renderFrame);
+  };
+
+  useEffect(() => {
+    if (videoRef.current) {
+      drawVideoOnCanvas();
+    }
+  }, [videoRef.current]);
+
+
+
+
+
   return (
     <div className="App">
       <header className="App-header">
@@ -99,6 +155,8 @@ function App() {
         </div>
         <button onClick={toggleCamera}>{isCameraActive ? "Stop Camera" : "Start Camera"}</button>
         <button onClick={toggleSkeletonDrawing}>{drawSkeleton ? "Hide Skeleton" : "Show Skeleton"}</button>
+        <input type="file" accept="video/*" onChange={handleVideoUpload} />
+        <video ref={videoRef} style={{ display: 'none' }} onLoadedMetadata={drawVideoOnCanvas}></video>
       </header>
     </div>
   );

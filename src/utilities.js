@@ -5,19 +5,19 @@ export const colors = {
     keypointOutlineColor: "rgb(255, 104, 89)",
 };
 
-export const drawKeypoints = (keypoints, minConfidence, ctx, scale = 1) => {
+export const drawKeypoints = (keypoints, minConfidence, ctx, positionScale = 1, sizeScale = 1) => {
     for (let i = 0; i < keypoints.length; i++) {
         const keypoint = keypoints[i];
 
         if (keypoint.score > minConfidence) {
             const { y, x } = keypoint;
             ctx.beginPath();
-            ctx.arc(x * scale, y * scale, 5, 0, 2 * Math.PI);
+            ctx.arc(x * positionScale, y * positionScale, 4 * sizeScale, 0, 2 * Math.PI);
             ctx.fillStyle = colors.keypointColor;
             ctx.fill();
 
             ctx.strokeStyle = colors.keypointOutlineColor;
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 2 * sizeScale;
             ctx.stroke();
         }
     }
@@ -52,16 +52,16 @@ const connectedParts = [
 ];
 
 
-export const drawSkeletonLines = (keypoints, minConfidence, ctx, scale = 1) => {
+export const drawSkeletonLines = (keypoints, minConfidence, ctx, positionScale = 1, sizeScale = 1) => {
     connectedParts.forEach(([i, j]) => {
         const keypoint1 = keypoints[i];
         const keypoint2 = keypoints[j];
 
         if (keypoint1.score > minConfidence && keypoint2.score > minConfidence) {
             ctx.beginPath();
-            ctx.moveTo(keypoint1.x * scale, keypoint1.y * scale);
-            ctx.lineTo(keypoint2.x * scale, keypoint2.y * scale);
-            ctx.lineWidth = 2;
+            ctx.moveTo(keypoint1.x * positionScale, keypoint1.y * positionScale);
+            ctx.lineTo(keypoint2.x * positionScale, keypoint2.y * positionScale);
+            ctx.lineWidth = 2 * sizeScale;
             ctx.strokeStyle = colors.skeletonColor;
             ctx.stroke();
         }
