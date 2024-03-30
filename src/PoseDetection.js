@@ -47,14 +47,8 @@ function PoseDetection() {
         drawKeypoints(pose.keypoints, 0.5, ctx);
         drawSkeletonLines(pose.keypoints, 0.5, ctx);
       }
-      // Log each keypoint's coordinates
-      pose.keypoints.forEach((keypoint) => {
-        if (keypoint.score > 0.5) { // Adjust score threshold as needed
-          console.log(`${keypoint.name}: x=${keypoint.x}, y=${keypoint.y}`);
-          // Optionally, display the coordinates on the canvas
-          ctx.fillText(`${keypoint.name}: (${Math.round(keypoint.x)}, ${Math.round(keypoint.y)})`, keypoint.x, keypoint.y);
-        }
-      });
+      
+     
     });
   }, [drawSkeleton]);
   
@@ -91,8 +85,8 @@ function PoseDetection() {
   }, [model, drawResults]);
   
   const videoConstraints = {
-    width: 1280, // You can specify width
-    height: 720, // And height, or leave them to be automatically selected based on the aspectRatio
+    width: 640, // You can specify width
+    height: 360, // And height, or leave them to be automatically selected based on the aspectRatio
     aspectRatio: 16 / 9
   };
 
