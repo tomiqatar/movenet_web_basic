@@ -20,6 +20,13 @@ function PoseDetection() {
 
   const frameCountRef = useRef(0);
   const lastFrameTimeRef = useRef(performance.now());
+  const drawIndicatorLight = (allLandmarksVisible) => {
+    const ctx = canvasRef.current.getContext("2d");
+    ctx.beginPath();
+    ctx.arc(30, 30, 15, 0, 2 * Math.PI); // Draw a circle at the top-left corner of the canvas
+    ctx.fillStyle = allLandmarksVisible ? 'green' : 'red'; // Use green if all landmarks are visible, otherwise red
+    ctx.fill();
+  };
 
 
 
@@ -82,20 +89,29 @@ function PoseDetection() {
   ctx.stroke();
 }, []);
 
-  const drawResults = useCallback((poses) => {
-    const ctx = canvasRef.current.getContext("2d");
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    ctx.font = "10px Arial";
-  
-    poses.forEach(pose => {
-      if (drawSkeleton) {
-        drawKeypoints(pose.keypoints, 0.5, ctx);
-        drawSkeletonLines(pose.keypoints, 0.5, ctx);
+const drawResults = useCallback((poses) => {
+  const ctx = canvasRef.current.getContext("2d");
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  ctx.font = "10px Arial";
+
+  let allLandmarksVisible = true; // Assume initially that all landmarks are visible
+
+  poses.forEach(pose => {
+    if (drawSkeleton) {
+      drawKeypoints(pose.keypoints, 0.5, ctx);
+      drawSkeletonLines(pose.keypoints, 0.5, ctx);
+    }
+    // Check visibility for each keypoint
+    pose.keypoints.forEach(kp => {
+      if (kp.score < 0.3) { // Assuming 0.5 as the threshold for visibility
+        allLandmarksVisible = false;
       }
-      
-     
     });
-  }, [drawSkeleton]);
+  });
+
+  drawIndicatorLight(allLandmarksVisible); // Call the function to draw the indicator light
+
+}, [drawSkeleton]);
   
   // Pose detection function - Memoize with useCallback
   const detectPose = useCallback(async () => {
@@ -103,32 +119,48 @@ function PoseDetection() {
       const now = performance.now();
       const elapsed = now - lastFrameTimeRef.current;
   
-      // Update state if more than one second has passed since last update
+      // Frame rate calculation logic
       if (elapsed >= 1000) {
-        setFrameRate(frameCountRef.current); // Update frame rate display
-        frameCountRef.current = 0; // Reset frame count
-        lastFrameTimeRef.current = now; // Reset the last frame time
+        setFrameRate(frameCountRef.current);
+        frameCountRef.current = 0;
+        lastFrameTimeRef.current = now;
       } else {
-        frameCountRef.current += 1; // Increment the frame count
+        frameCountRef.current += 1;
       }
   
       const video = webcamRef.current.video;
       const poses = await model.estimatePoses(video, { flipHorizontal: false });
-      const timestamp = Date.now(); // Get the current timestamp
-      const newKeypointsData = poses.map(pose => pose.keypoints.map(kp => ({
-        name: kp.name,
-        x: kp.x,
-        y: kp.y,
-        score: kp.score,
-        timestamp: timestamp // Add the timestamp to each keypoint data
-      })));
-      setKeypointsData(prevData => [...prevData, ...newKeypointsData.flat()]);
-
-      
-      drawResults(poses);
-      drawFixedTriangleCorners(); // Add this line here
+      let allLandmarksVisible = true; // Assume all landmarks are visible initially
+  
+      // Check visibility for each keypoint in each pose
+      for (const pose of poses) {
+        for (const kp of pose.keypoints) {
+          if (kp.score < 0.3) { // Adjust this threshold based on your needs
+            allLandmarksVisible = false;
+            break; // Exit the loop early if any landmark is not visible
+          }
+        }
+        if (!allLandmarksVisible) break; // Exit the outer loop early as well
+      }
+  
+      // Conditional keypoints data update based on landmarks visibility
+      if (allLandmarksVisible) {
+        const timestamp = Date.now(); // Get the current timestamp
+        const newKeypointsData = poses.map(pose => pose.keypoints.map(kp => ({
+          name: kp.name,
+          x: kp.x,
+          y: kp.y,
+          score: kp.score,
+          timestamp // Add the timestamp to each keypoint data
+        })));
+        setKeypointsData(prevData => [...prevData, ...newKeypointsData.flat()]);
+      }
+  
+      drawResults(poses, allLandmarksVisible); // Updated to pass visibility status
+      drawFixedTriangleCorners(); // This remains unchanged
     }
   }, [model, drawResults, drawFixedTriangleCorners]);
+  
   
   const videoConstraints = {
     width: 640, // You can specify width
