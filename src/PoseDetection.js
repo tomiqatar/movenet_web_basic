@@ -36,6 +36,45 @@ function PoseDetection() {
     loadModel();
   }, []);
 
+  const drawFixedTriangleCorners = useCallback(() => {
+    const ctx = canvasRef.current.getContext("2d");
+    const { width, height } = ctx.canvas;
+  
+    // Set common style for the shapes
+    ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)'; // Red with 50% transparency for stroke
+    ctx.fillStyle = 'rgba(255, 0, 0, 0.0)'; // Red with 50% transparency for fill
+    ctx.lineWidth = 1;
+  
+    // Adjusted positions to bring legs closer
+    // Decrease these values to bring the legs even closer together
+    const leftLegX = width * 0.4; // Closer left leg position
+    const rightLegX = width * 0.6; // Closer right leg position
+  
+    // Draw L with a curved corner on the left side, adjusted closer
+    ctx.beginPath();
+    ctx.moveTo(leftLegX, height * 0.8);
+   
+    ctx.arcTo(leftLegX, height * 0.93, leftLegX + 20, height * 0.93, 20);
+    ctx.lineTo(leftLegX + 30, height * 0.93); // Adjust the length of the horizontal line if needed
+    ctx.stroke();
+  
+    // Draw mirrored L on the right side, adjusted closer
+    ctx.beginPath();
+    ctx.moveTo(rightLegX, height * 0.8);
+    
+    ctx.arcTo(rightLegX, height * 0.93, rightLegX - 20, height * 0.93, 20);
+    ctx.lineTo(rightLegX - 30, height * 0.93); // Adjust the length of the horizontal line if needed
+    ctx.stroke();
+  
+    // Draw a full circle for the head with half transparency
+    const headCenterX = width / 2;
+    const headCenterY = height * 0.2;
+    const headRadius = 20; // Radius of the circle
+    ctx.beginPath();
+    ctx.arc(headCenterX, headCenterY, headRadius, 0, 2 * Math.PI, false); // Full circle
+    ctx.fill(); // Fill the circle with the semi-transparent red color set by fillStyle
+    ctx.stroke(); // Outline the circle
+  }, []);
 
   const drawResults = useCallback((poses) => {
     const ctx = canvasRef.current.getContext("2d");
@@ -81,8 +120,9 @@ function PoseDetection() {
 
       
       drawResults(poses);
+      drawFixedTriangleCorners(); // Add this line here
     }
-  }, [model, drawResults]);
+  }, [model, drawResults, drawFixedTriangleCorners]);
   
   const videoConstraints = {
     width: 640, // You can specify width
@@ -126,6 +166,9 @@ function PoseDetection() {
         detectPose();
       }, 10);
       return () => clearInterval(interval);
+
+      
+      
     }
   }, [isCameraActive, detectPose]);
 
