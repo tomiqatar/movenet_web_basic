@@ -38,43 +38,49 @@ function PoseDetection() {
 
   const drawFixedTriangleCorners = useCallback(() => {
     const ctx = canvasRef.current.getContext("2d");
-    const { width, height } = ctx.canvas;
+  const { width, height } = ctx.canvas;
+
+  // Set common style for the shapes
+  ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)'; // Red with 50% transparency for stroke
+  ctx.fillStyle = 'rgba(255, 0, 0, 0.2)'; // Red with 50% transparency for fill
+  ctx.lineWidth = 1;
+
+  // Calculate head's center and radius for the circle
+  const headCenterX = width / 2;
+  const headCenterY = height * 0.1;
+  const headRadius = 20; // Radius of the circle
+
+  // Draw a full circle for the head with half transparency
+  ctx.beginPath();
+  ctx.arc(headCenterX, headCenterY, headRadius, 0, 2 * Math.PI, false); // Full circle
+  ctx.fill(); // Fill the circle with the semi-transparent red color set by fillStyle
+  ctx.stroke(); // Outline the circle
+
+  // Calculate the vertical distance from the head's bottom to the ankle marks
+  const distanceFromHeadToAnkle = height * 0.93 - (headCenterY + headRadius);
   
-    // Set common style for the shapes
-    ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)'; // Red with 50% transparency for stroke
-    ctx.fillStyle = 'rgba(255, 0, 0, 0.0)'; // Red with 50% transparency for fill
-    ctx.lineWidth = 1;
-  
-    // Adjusted positions to bring legs closer
-    // Decrease these values to bring the legs even closer together
-    const leftLegX = width * 0.4; // Closer left leg position
-    const rightLegX = width * 0.6; // Closer right leg position
-  
-    // Draw L with a curved corner on the left side, adjusted closer
-    ctx.beginPath();
-    ctx.moveTo(leftLegX, height * 0.8);
-   
-    ctx.arcTo(leftLegX, height * 0.93, leftLegX + 20, height * 0.93, 20);
-    ctx.lineTo(leftLegX + 30, height * 0.93); // Adjust the length of the horizontal line if needed
-    ctx.stroke();
-  
-    // Draw mirrored L on the right side, adjusted closer
-    ctx.beginPath();
-    ctx.moveTo(rightLegX, height * 0.8);
-    
-    ctx.arcTo(rightLegX, height * 0.93, rightLegX - 20, height * 0.93, 20);
-    ctx.lineTo(rightLegX - 30, height * 0.93); // Adjust the length of the horizontal line if needed
-    ctx.stroke();
-  
-    // Draw a full circle for the head with half transparency
-    const headCenterX = width / 2;
-    const headCenterY = height * 0.2;
-    const headRadius = 20; // Radius of the circle
-    ctx.beginPath();
-    ctx.arc(headCenterX, headCenterY, headRadius, 0, 2 * Math.PI, false); // Full circle
-    ctx.fill(); // Fill the circle with the semi-transparent red color set by fillStyle
-    ctx.stroke(); // Outline the circle
-  }, []);
+  // Calculate separation between the ankles based on the desired proportion of the height
+  const ankleSeparation = distanceFromHeadToAnkle / 2.5;
+
+  // Calculate the new X positions for the left and right legs based on the ankle separation
+  // This places the ankle markers at the desired separation
+  const leftLegX = (width / 2) - (ankleSeparation / 2);
+  const rightLegX = (width / 2) + (ankleSeparation / 2);
+
+  // Draw L with a curved corner on the left side, adjusted for new positions
+  ctx.beginPath();
+  ctx.moveTo(leftLegX, height * 0.8);
+  ctx.arcTo(leftLegX, height * 0.94, leftLegX + 20, height * 0.94, 20);
+  ctx.lineTo(leftLegX + 30, height * 0.94); // Adjust as needed
+  ctx.stroke();
+
+  // Draw mirrored L on the right side, adjusted for new positions
+  ctx.beginPath();
+  ctx.moveTo(rightLegX, height * 0.8);
+  ctx.arcTo(rightLegX, height * 0.94, rightLegX - 20, height * 0.94, 20);
+  ctx.lineTo(rightLegX - 30, height * 0.94); // Adjust as needed
+  ctx.stroke();
+}, []);
 
   const drawResults = useCallback((poses) => {
     const ctx = canvasRef.current.getContext("2d");
