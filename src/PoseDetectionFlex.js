@@ -28,6 +28,22 @@ function PoseDetection() {
     ctx.fill();
   };
 
+  const [measureStart, setMeasureStart] = useState(false);
+  const [hipPositions, setHipPositions] = useState([]);
+
+  const [averageHipPosition] = useState(null);
+
+  const startMeasurement = () => {
+    // Trigger a visual indicator or log to show measurement will start soon
+    console.log('Measurement will start in 2 seconds...');
+    setTimeout(() => {
+      setMeasureStart(true);
+      setHipPositions([]); // Reset previous measurements
+      console.log('Measurement started');
+    }, 2000); // Start after 2 seconds
+  };
+
+
 
 
   useEffect(() => {
@@ -85,6 +101,16 @@ const drawResults = useCallback((poses) => {
   
       const video = webcamRef.current.video;
       const poses = await model.estimatePoses(video, { flipHorizontal: false });
+      if (poses.length > 0 && measureStart) {
+        const pose = poses[0];
+        const leftHip = pose.keypoints.find(kp => kp.name === 'left_hip');
+        const rightHip = pose.keypoints.find(kp => kp.name === 'right_hip');
+        
+        if (leftHip && rightHip) {
+          const averageY = (leftHip.y + rightHip.y) / 2;
+          setHipPositions(prev => [...prev, averageY]);
+        }
+      }
       let allLandmarksVisible = true; // Assume all landmarks are visible initially
   
       // Check visibility for each keypoint in each pose
@@ -114,7 +140,7 @@ const drawResults = useCallback((poses) => {
       drawResults(poses, allLandmarksVisible); // Updated to pass visibility status
       
     }
-  }, [model, drawResults]);
+  }, [model, drawResults, measureStart, setHipPositions]);
   
   
   const videoConstraints = {
@@ -227,6 +253,17 @@ const drawResults = useCallback((poses) => {
     link.click(); // This will download the data file named "keypoints_data.csv".
   };
   
+  useEffect(() => {
+    // Trigger the measurement after 2 seconds
+    const timer = setTimeout(() => {
+      setMeasureStart(true);
+      setHipPositions([]); // Reset previous measurements
+      console.log('Measurement started');
+    }, 2000); // Start after 2 seconds
+  
+    return () => clearTimeout(timer); // Cleanup the timer
+  }, [setHipPositions]);
+  
   
   
 
@@ -256,6 +293,9 @@ const drawResults = useCallback((poses) => {
           <canvas ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }} />
           <ImaginaryMarks width={videoConstraints.width} height={videoConstraints.height} />
         </div>
+        <button onClick={startMeasurement}>Start Jump Measurement</button>
+        {averageHipPosition !== null && <p>Average Hip Y Position: {averageHipPosition}</p>}
+
         <button onClick={toggleCamera}>{isCameraActive ? "Stop Camera" : "Start Camera"}</button>
         <button onClick={downloadCSV}>Download KeyPoints CSV</button>
 

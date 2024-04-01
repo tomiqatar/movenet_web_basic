@@ -1,11 +1,15 @@
 import React from 'react';
 import './App.css';
-import PoseDetection from './PoseDetection';
+
+import PoseDetectionFlex from './PoseDetectionFlex';
 
 function App() {
+
+  
   return (
     <div className="App">
-      <PoseDetection />
+      <PoseDetectionFlex />
+      
     </div>
   );
 }
